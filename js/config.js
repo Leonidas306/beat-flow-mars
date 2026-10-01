@@ -1,13 +1,11 @@
-export const APP_CONFIG = {
-    audius: {
+export const APP_CONFIG = { 
+    audius: { 
         apiKey: 'cec9d6862ad0ce39da7897387e6276c67eca2978'
+        , }
+,search: { 
+    minLength: 2, limit: 20, 
+}, 
+trending: {
+     limit: 12, time: 'week', 
     },
-    search: {
-        minLennth: 2,
-        limit: 20
-    },
-    trending:{
-        limit: 12,
-        time: 'week'
-    }
-}
+ }

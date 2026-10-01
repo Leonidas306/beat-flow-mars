@@ -17,7 +17,7 @@ const createTrackCard = (track) => {
                    ▶️
                   </button>
 
-                  <div class="absolute left-3 top-3 rounded-full bg-black/60 px-2 5 py-1 text-[10px] font-semibold uppercase">
+                  <div class="absolute left-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-semibold uppercase">
                       ${track.genre}
                   </div>
             </div>
@@ -45,12 +45,13 @@ const createRecentlyPlayedRow = (track) =>{
             <span>
                 ${track.duration}
             </span>
-            <button class="play-track grid w-9 h-9 place-items-center rounded-full 
+            <button type="button" class="play-track grid w-9 h-9 place-items-center rounded-full 
              bg-zinc-800 text-white"
              data-track-id="${track.id}"
              aria-label="Seleccionar ${track.title}">
                    ▶️
             </button>
+            <div class="... px-2.5 py-1 ..."> ${track.genre} </div> BeatFlow · v0.3.0
        </article>
     `
 }
