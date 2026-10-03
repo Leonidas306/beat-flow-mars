@@ -55,6 +55,12 @@ export function createPlayerUI() {
       '#volume-range',
     )
 
+  // 1. Agregar el selector del nuevo botón
+  const favoriteButton =
+    document.querySelector(
+      '#player-favorite-button',
+    )
+
   function renderTrack(track) {
     if (!track) {
       return
@@ -114,10 +120,37 @@ export function createPlayerUI() {
       String(value)
   }
 
+  // 2. Crear la función para renderizar el estado del favorito
+  function renderFavorite(
+    favorite,
+  ) {
+    if (!favoriteButton) {
+      return
+    }
+
+    favoriteButton.textContent =
+      favorite
+        ? '♥'
+        : '♡'
+
+    favoriteButton.setAttribute(
+      'aria-label',
+      favorite
+        ? 'Quitar de favoritos'
+        : 'Agregar a favoritos',
+    )
+
+    favoriteButton.setAttribute(
+      'aria-pressed',
+      String(favorite),
+    )
+  }
+
   return {
     renderTrack,
     renderPlaying,
     renderProgress,
     renderVolume,
+    renderFavorite, // 3. Exportarlo en el retorno de la interfaz
   }
 }

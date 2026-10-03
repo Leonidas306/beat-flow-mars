@@ -1,5 +1,5 @@
 const createTrackCard = (track) => {
-    return `
+  return `
         <article class="track-card group rounded-2xl border border-white/5 
         bg-zinc-900/80 p-3 transition duration-300 hover:-translate-y-1 
         hover:border-violet-500/40">
@@ -9,6 +9,18 @@ const createTrackCard = (track) => {
                   class="track-card-image aspect-square w-full object-cover"
                   loading="lazy"
                   >
+                    <button
+                      type="button"
+                      class="favorite-track absolute right-3 top-3
+                            grid h-9 w-9 place-items-center
+                            rounded-full bg-black/60 text-white"
+                      data-track-id="${track.id}"
+                      aria-label="Agregar ${track.title} a favoritos"
+                      aria-pressed="false"
+                    >
+                      ♡
+                    </button>
+
                   <button class="play-track absolute bottom-3 right-4 grid h-11 w-11 
                   place-items-center rounded-full bg-white text-black opacity-0 
                   shadow-xl transition group-hover:opacity-100 focus:opacity-100"
@@ -29,8 +41,8 @@ const createTrackCard = (track) => {
     `
 }
 
-const createRecentlyPlayedRow = (track) =>{
-    return`
+const createRecentlyPlayedRow = (track) => {
+  return `
        <article class="grid grid-cols-[auto_1fr_auto_auto] items-centers-gap3
         rounded-2xl px-3 py-2 transition hover:bg-zinc-900">
            <img src="${track.cover}" 
@@ -154,11 +166,10 @@ export function renderHome({
         class="divide-y divide-white/5 rounded-3xl
                border border-white/10 bg-zinc-900/40 p-2"
       >
-        ${
-          recentlyPlayedTracks
-            .map(createRecentlyPlayedRow)
-            .join('')
-        }
+        ${recentlyPlayedTracks
+      .map(createRecentlyPlayedRow)
+      .join('')
+    }
       </div>
     </section>
   `

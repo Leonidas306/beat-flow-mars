@@ -9,6 +9,11 @@ import {
 
 // Import nueva
 import { renderSearch } from './ui/search.ui.js'
+import { renderLibrary } from './ui/library.ui.js'
+import {
+  getFavorites,getHistory,isFavorite,toggleFavorite,
+  addToHistory,getVolume,saveVolume,getLastTrack,saveLastTrack
+} from './services/storage.service.js'
 import { renderEmpty,renderError,renderLoading } from './ui/states.ui.js'
 
 //import secion 3 24/09/2026
@@ -64,8 +69,19 @@ async function initializeApp() {
   registerNavigationEvents()
   registerGlobalEvents()
   registerPlayerEvents()
-  setVolume(Number(volumeRange.value))
+  const volume=getVolume()
+  setVolume(volume)
+  playerUI.renderVolume(volume)
   await loadHome()
+
+  const lastTrack=getLastTrack()
+  if(lastTrack){
+    state.currentTrack=lastTrack
+    playerUI.renderTrack(lastTrack)
+    playerUI.renderFavorite(isFavorite(lastTrack.id))
+    loadAudio(getTrackStreamUrl(lastTrack.id))
+    setQueue([lastTrack],lastTrack.id)
+  }
 }
 
 async function loadHome(){
@@ -80,8 +96,9 @@ async function loadHome(){
     renderHome({
       target: app,
       trendingTracks: state.trendingTracks,
-      recentlyPlayedTracks: state.trendingTracks.slice(0,4)
+      recentlyPlayedTracks: getHistory().slice(0,4)
     })
+    syncFavoriteButtons()
     
   }catch(error){
     console.error(error)
@@ -127,6 +144,7 @@ async function executeSearch(query){
       query:normalizeQuery,
       tracks:state.searchResults
     })
+    syncFavoriteButtons()
   }catch(error){
     console.error(error)
     renderError({
@@ -144,7 +162,13 @@ function getActiveCollection(){
     return state.searchResults
   }
 
-  return state.trendingTracks
+  const tracks=state.currentView === 'library'
+    ? [...getFavorites(),...getHistory()]
+    : [...state.trendingTracks,...getHistory()]
+
+  return Array.from(
+    new Map(tracks.map((track)=>[track.id,track])).values()
+  )
 }
 
 
@@ -166,9 +190,15 @@ async function loadAndPlayTrack(track) {
   try{
     state.currentTrack = track
     playerUI.renderTrack(track)
+    playerUI.renderFavorite(isFavorite(track.id))
     const streamUrl = getTrackStreamUrl(track.id)
     loadAudio(streamUrl)
     await playAudio()
+    addToHistory(track)
+    saveLastTrack(track)
+    if(state.currentView === 'library'){
+      refreshLibrary()
+    }
   }
   catch (error){
     alert(`No es posible reproducir la cancion ${error}`)
@@ -217,6 +247,7 @@ function registerPlayerEvents(){
   })
   onPlayerEvent('volumechange',({volume})=>{
     playerUI.renderVolume(volume)
+    saveVolume(volume)
   })
   onPlayerEvent('ended',playNextTrack)
   onPlayerEvent('error', (error) => { console.error('Audio error:', error) 
@@ -228,95 +259,59 @@ function registerPlayerEvents(){
 function renderLibraryPlaceholder(){
   state.currentView='library'
   updateNavigationStyles()
-  renderEmpty({
+  refreshLibrary()
+}
+
+function refreshLibrary(){
+  renderLibrary({
     target:app,
-    title:'Proximamente...',
-    message:'Canciones favoritas, historial y preferencias'
+    favorites:getFavorites(),
+    history:getHistory()
   })
+  syncFavoriteButtons()
+}
+
+function syncFavoriteButtons(){
+  document.querySelectorAll('.favorite-track').forEach((button)=>{
+    const favorite=isFavorite(button.dataset.trackId)
+    button.textContent=favorite ? '♥' : '♡'
+    button.setAttribute('aria-pressed',String(favorite))
+    button.setAttribute(
+      'aria-label',
+      favorite ? 'Quitar de favoritos' : 'Agregar a favoritos'
+    )
+  })
+
+  playerUI.renderFavorite(
+    state.currentTrack ? isFavorite(state.currentTrack.id) : false
+  )
+}
+
+function toggleTrackFavorite(trackId){
+  const tracks=[
+    state.currentTrack,
+    ...state.trendingTracks,
+    ...state.searchResults,
+    ...getFavorites(),
+    ...getHistory()
+  ]
+  const track=tracks.find((item)=>item && item.id === trackId)
+  if(!track){
+    return
+  }
+
+  toggleFavorite(track)
+  if(state.currentView === 'library'){
+    refreshLibrary()
+  }else{
+    syncFavoriteButtons()
+  }
 }
 // Eliminar renderCurrentView().por el profe 30/09/2026
-/*
-function renderCurrentView() {
-  if (state.currentView === 'home') {
-    renderHome({
-      target: app,
-      trendingTracks,
-      recentlyPlayedTracks,
-    })
 
-    return
-  }
-
-  renderPlaceholderView(state.currentView)
-}
-*/
 
 // Eliminar renderPlaceholderView(). por el profe 30/09/2026
-/*
-function renderPlaceholderView(view) {
-  const content = {
-    search: {
-      eyebrow: 'Sesión 2',
-      title: 'Buscar música',
-      description:
-        'En la siguiente sesión esta vista se conectará con una API musical real.',
-    },
 
-    library: {
-      eyebrow: 'Sesión 4',
-      title: 'Tu biblioteca',
-      description:
-        'Más adelante aparecerán favoritos, historial y preferencias.',
-    },
-  }
-
-  const selected = content[view]
-
-  if (!selected) {
-    return
-  }
-
-  app.innerHTML = `
-    <section class="grid min-h-[60vh] place-items-center">
-      <div
-        class="max-w-xl rounded-3xl border border-white/10
-               bg-zinc-900/60 p-8 text-center"
-      >
-        <p
-          class="text-xs font-semibold uppercase
-                 tracking-[0.2em] text-violet-400"
-        >
-          ${selected.eyebrow}
-        </p>
-
-        <h1 class="mt-3 text-4xl font-bold">
-          ${selected.title}
-        </h1>
-
-        <p class="mt-4 leading-7 text-zinc-400">
-          ${selected.description}
-        </p>
-
-        <button
-          id="back-home"
-          type="button"
-          class="mt-6 rounded-full bg-white px-5 py-2.5
-                 text-sm font-bold text-black"
-        >
-          Volver al inicio
-        </button>
-      </div>
-    </section>
-  `
-
-  document
-    .querySelector('#back-home')
-    ?.addEventListener(
-      'click',
-      () => navigateTo('home'),
-    )
-}
-*/
 
 //modificada registerNavigationEvents() el 28/09/2026
 function registerNavigationEvents() {
@@ -348,13 +343,7 @@ function registerNavigationEvents() {
 }
 
 // Eliminar navigateTo(). por el profe 30/09/2026
-/*
-function navigateTo(view) {
-  state.currentView = view
-  renderCurrentView()
-  updateNavigationStyles()
-}
-*/
+
 function updateNavigationStyles() {
   document
     .querySelectorAll('.nav-item')
@@ -383,6 +372,11 @@ function updateNavigationStyles() {
 // modificada registerGlobalEvents() 28/09/2026
 function registerGlobalEvents() {
   document.addEventListener('click', async (event) => { 
+    const favoriteButton=event.target.closest('.favorite-track')
+    if(favoriteButton){
+      toggleTrackFavorite(favoriteButton.dataset.trackId)
+      return
+    }
     const playTrackButton = 
     event.target.closest('.play-track') 
     if (!playTrackButton) { 
@@ -391,6 +385,12 @@ function registerGlobalEvents() {
     await playTrack( 
       playTrackButton.dataset.trackId, 
     ) 
+  })
+
+  document.querySelector('#player-favorite-button')?.addEventListener('click',()=>{
+    if(state.currentTrack){
+      toggleTrackFavorite(state.currentTrack.id)
+    }
   })
 
   globalSearch.addEventListener('keydown',(event)=>{
@@ -438,54 +438,12 @@ function registerGlobalEvents() {
 }
 
 // Eliminar getVisibleTracks().  por el profe 30/09/2026
-/*
-function getVisibleTracks(){
-  return[...state.trendingTracks,...state.searchResults]
-}
-*/
+
 // Eliminar selectTrack(). por el profe 30/09/2026
 
-/*
-function selectTrack(trackId) {
-  const track=getVisibleTracks().find((item)=>item.id===trackId)
 
-  if (!track) {
-    return
-  }
-
-  state.currentTrack = track
-  state.isPlaying = true
-  updatePlayer()
-}
-*/
 
 // Eliminar updatePlayer().por el profe 30/09/2026
-/*
-function updatePlayer() {
-  const track = state.currentTrack
 
-  if (!track) {
-    return
-  }
-
-  playerTitle.textContent = track.title
-  playerArtist.textContent = track.artist
-  playerCover.src = track.cover
-  playerCover.alt = `Portada de ${track.title}`
-
-  playButton.textContent =
-    state.isPlaying
-      ? '❚❚'
-      : '▶'
-
-  playButton.setAttribute(
-    'aria-label',
-    state.isPlaying
-      ? 'Pausar'
-      : 'Reproducir',
-  )
-}
-*/
 
 initializeApp()
- 

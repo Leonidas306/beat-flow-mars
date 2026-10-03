@@ -13,13 +13,23 @@ function createSearchRow(track) {
         <p class="mt-1 truncate text-sm text-zinc-500">${track.artist} · ${track.genre}</p>
         <p class="mt-1 text-xs text-zinc-600">${track.duration}</p>
       </div>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="favorite-track grid h-10 w-10 place-items-center rounded-full bg-zinc-800"
+          data-track-id="${track.id}"
+          aria-label="Agregar ${track.title} a favoritos"
+          aria-pressed="false"
+        >♡</button>
 
-      <button
-        type="button"
-        class="play-track grid h-11 w-11 place-items-center rounded-full bg-white text-black"
-        data-track-id="${track.id}"
-        aria-label="Seleccionar ${track.title}"
-      >▶</button>
+        <button
+          type="button"
+          class="play-track grid h-11 w-11 place-items-center rounded-full bg-white text-black"
+          data-track-id="${track.id}"
+          aria-label="Seleccionar ${track.title}"
+        >▶</button>
+      </div>
+      
     </article>
   `
 }
